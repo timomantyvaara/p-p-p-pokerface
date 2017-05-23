@@ -13,47 +13,56 @@
 
 (defn suit [card]
   (let [[_ suit] card]
-    (str suit)
-    ))
+    (str suit)))
+
+(defn rank-freq [hand]
+  (sort (vals (frequencies (map rank hand)))))
 
 (defn pair? [hand]
-  (< 1 (apply max (vals (frequencies (map rank hand))))))
+  (= 2 (apply max (rank-freq hand))))
 
 (defn three-of-a-kind? [hand]
-  (< 2 (apply max (vals (frequencies (map rank hand))))))
+  (= 3 (apply max (rank-freq hand))))
 
 (defn four-of-a-kind? [hand]
-  (< 3 (apply max (vals (frequencies (map rank hand))))))
+  (= 4 (apply max (rank-freq hand))))
 
 (defn flush? [hand]
   (= 1 (count (keys (frequencies (map suit hand))))))
 
 (defn full-house? [hand]
-  (= (seq [2 3]) (sort (vals (frequencies (map rank hand))))))
+  (=
+    (seq [2 3])
+    (rank-freq hand)))
 
 (defn two-pairs? [hand]
   (or
     (four-of-a-kind? hand)
-    (= (seq [1 2 2]) (sort (vals (frequencies (map rank hand)))))))
+    (= (seq [1 2 2]) (rank-freq hand))))
 
 (defn straight? [hand]
-  (let [ranks (map rank hand)
-        hand-range (range (apply min ranks) (+ 1 (apply max ranks)))
-        ranks-ace-one (replace {14 1} (map rank hand))
-        hand-range-ace-one (range (apply min ranks-ace-one) (+ 1 (apply max ranks-ace-one)))]
+  (let [ranks (sort (seq (map rank hand)))
+        ranks-low-ace (sort (replace {14 1} ranks))
+        hand-range (fn [ranks] (range (apply min ranks) (+ 1 (apply max ranks))))]
     (or
-      (= hand-range (sort (seq ranks)))
-      (= hand-range-ace-one (sort (seq ranks-ace-one))))))
+      (= (hand-range ranks) ranks)
+      (= (hand-range ranks-low-ace) ranks-low-ace))))
 
 (defn straight-flush? [hand]
-  (and (straight? hand) (flush? hand)))
+  (and
+    (straight? hand)
+    (flush? hand)))
 
 (defn value [hand]
-  (let [checkers #{[high-card? 0]  [pair? 1]
-                 [two-pairs? 2]  [three-of-a-kind? 3]
-                 [straight? 4]   [flush? 5]
-                 [full-house? 6] [four-of-a-kind? 7]
-                 [straight-flush? 8]}
+  (let [checkers #{[high-card? 0]
+                   [pair? 1]
+                   [two-pairs? 2]
+                   [three-of-a-kind? 3]
+                   [straight? 4]
+                   [flush? 5]
+                   [full-house? 6]
+                   [four-of-a-kind? 7]
+                   [straight-flush? 8]}
         match? (fn [checker] ((first checker) hand))
         all-hand-values (map second (filter match? checkers))]
     (apply max all-hand-values)))
